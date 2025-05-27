@@ -1,0 +1,150 @@
+REPORT zsam_extrator.
+
+" Parâmetros de seleção para definir quais dados serão extraídos
+PARAMETERS: p_cli   TYPE abap_bool,     " Extrair clientes
+            p_forn  TYPE abap_bool,     " Extrair fornecedores
+            p_mexp  TYPE abap_bool,     " Extrair materiais de exportação
+            p_mall  TYPE abap_bool,     " Extrair todos os materiais
+            p_first TYPE abap_bool,     " Indicador de extração inicial
+            p_delta TYPE abap_bool,     " Indicador de extração delta
+            p_path  TYPE string.        " Caminho de saída do arquivo CSV
+
+" Bloco principal do programa
+
+START-OF-SELECTION.
+
+  " Verifica se deve extrair clientes
+  IF p_cli = abap_true.
+    PERFORM extrair_cliente.
+  ENDIF.
+
+  " Verifica se deve extrair fornecedores
+  IF p_forn = abap_true.
+    PERFORM extrair_fornecedor.
+  ENDIF.
+
+  " Verifica se deve extrair materiais de exportação
+  IF p_mexp = abap_true.
+    PERFORM extrair_material_exp.
+  ENDIF.
+
+  " Verifica se deve extrair todos os materiais
+  IF p_mall = abap_true.
+    PERFORM extrair_todos_materiais.
+  ENDIF.
+
+  " Subrotina para extrair dados de clientes
+FORM extrair_cliente.
+  DATA: lt_clientes TYPE TABLE OF zsam_extrator.
+
+  " Simulação de dados para teste
+  APPEND VALUE #( kunnr = '0000000001'
+                  name1 = 'Cliente A'
+                  street = 'Rua A'
+                  city1 = 'Cidade A'
+                  state = 'SP'
+                  region = '01'
+                  country = 'BR'
+                  tel_number = '11999999999'
+                  fax_number = '1133333333'
+                  smtp_addr = 'clienteA@empresa.com'
+                  contact_name = 'Contato A' )
+         TO lt_clientes.
+
+  " Gera arquivo CSV com os dados extraídos
+  PERFORM gerar_csv USING lt_clientes 'CLIENTE'.
+ENDFORM.
+
+" Subrotina para extrair dados de fornecedores
+FORM extrair_fornecedor.
+  DATA: lt_fornecedores TYPE TABLE OF zsam_extrator_fornecedor.
+
+  " Simulação de dados para teste
+  APPEND VALUE #( lifnr = 'F0001'
+                  name1 = 'Fornecedor A'
+                  street = 'Rua F'
+                  city1 = 'Cidade F'
+                  state = 'RJ'
+                  region = '02'
+                  country = 'BR'
+                  tel_number = '2133334444'
+                  fax_number = '2133335555'
+                  smtp_addr = 'fornecedor@empresa.com'
+                  contact_name = 'Contato F' )
+         TO lt_fornecedores.
+
+  " Gera arquivo CSV com os dados extraídos
+  PERFORM gerar_csv USING lt_fornecedores 'FORNECEDOR'.
+ENDFORM.
+
+" Subrotina para extrair dados de materiais de exportação
+FORM extrair_material_exp.
+  DATA: lt_mat_exp TYPE TABLE OF zsam_extrator_material_exp.
+
+  " Simulação de dados para teste
+  APPEND VALUE #( matnr = 'MAT001'
+                  maktx = 'Material X'
+                  meins = 'PC'
+                  matkl = 'GRUPO1'
+                  ean11 = '7891234567890'
+                  site_name = 'Fabrica 1' )
+         TO lt_mat_exp.
+
+  " Gera arquivo CSV com os dados extraídos
+  PERFORM gerar_csv USING lt_mat_exp 'MAT_EXP'.
+ENDFORM.
+
+" Subrotina para extrair dados de todos os materiais
+FORM extrair_todos_materiais.
+  DATA: lt_todos TYPE TABLE OF zsam_extr_todos_materiais.
+
+  " Simulação de dados para teste
+  APPEND VALUE #( matnr = 'MAT002'
+                  maktx = 'Material Y'
+                  meins = 'CX'
+                  matkl = 'GRUPO2'
+                  site_name = 'Fabrica 2'
+                  lifnr = 'F0002'
+                  name1 = 'Fornecedor B' )
+         TO lt_todos.
+
+  " Gera arquivo CSV com os dados extraídos
+  PERFORM gerar_csv USING lt_todos 'TODOS_MAT'.
+ENDFORM.
+
+" Subrotina genérica para gerar arquivos CSV a partir de qualquer tabela interna
+FORM gerar_csv USING it_data TYPE STANDARD TABLE
+                        p_tipo TYPE string.
+  DATA: lv_file TYPE string,   " Caminho completo do arquivo CSV
+        lv_line TYPE string.   " Linha formatada para o CSV
+
+  " Monta o caminho e nome do arquivo
+  lv_file = p_path && '/' && p_tipo && '.csv'.
+
+  " Abre o arquivo para escrita em modo texto
+  OPEN DATASET lv_file FOR OUTPUT IN TEXT MODE ENCODING DEFAULT.
+
+  " Percorre a tabela interna para gerar cada linha do CSV
+  LOOP AT it_data ASSIGNING FIELD-SYMBOL(<fs>).
+    lv_line = ''.
+
+    " Percorre dinamicamente todos os componentes da estrutura
+    DO.
+      ASSIGN COMPONENT sy-index OF STRUCTURE <fs> TO FIELD-SYMBOL(<f>).
+
+      " Sai do loop quando não houver mais componentes
+      IF sy-subrc <> 0.
+        EXIT.
+      ENDIF.
+
+      " Concatena o componente na linha CSV, separado por ponto e vírgula
+      CONCATENATE lv_line <f> INTO lv_line SEPARATED BY ';'.
+    ENDDO.
+
+    " Grava a linha formatada no arquivo
+    TRANSFER lv_line TO lv_file.
+  ENDLOOP.
+
+  " Fecha o arquivo após gravação
+  CLOSE DATASET lv_file.
+ENDFORM.
