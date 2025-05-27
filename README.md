@@ -34,11 +34,6 @@ Projeto ABAP para extração de dados no SAP e geração de arquivos CSV, com fo
 - SAP ECC / S/4HANA (compatível)
 - Manipulação de arquivos via `OPEN DATASET`
 
-## 📄 Estrutura do projeto
+## 👤 Autor
 
-zsam_extrator/
-├── src/
-│ └── zsam_extrator.abap
-├── README.md
-├── LICENSE
-└── .gitignore
+Luiz Guni
